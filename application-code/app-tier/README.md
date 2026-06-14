@@ -1,6 +1,5 @@
 # App-tier Setup 
-## youtube (https://www.youtube.com/@devopsHarishNShetty)
-# For more Projects. https://harishnshetty.github.io/projects.html
+
 ## INSTALLING MYSQL IN AMAZON LINUX 2023
 ## (REF: https://dev.to/aws-builders/installing-mysql-on-amazon-linux-2023-1512)
 

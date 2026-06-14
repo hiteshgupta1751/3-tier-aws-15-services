@@ -1,25 +1,53 @@
 # AWS Three Tier Web Architecture Workshop
-![Architecture Diagram](./src/assets/3-tier-AWS-architecture.png)
-
+![Architecture Diagram](./application-code/web-tier/src/assets/3-tier-AWS-architecture.png)
 ---
-```
-1. VPC (12 Subnets, 10 Route Tables, 1 IGW, 3 NAT)
-2. Security Group (Cross-connection)
-3. EC2
-4. Auto Scaling Group (ASG with IAM & Launch Template)
-5. ALB (2 Target Groups)
-6. IAM (for Image Build & Access Control)
-7. RDS (MySQL)
-8. Secrets Manager
-9. S3 (Data + VPC Flow Logs)
-10. Cloud Watch
-11. SNS
-12. Cloud Trail
-13. Cloud Front
-14. ACM (SSL Certificates)
-15. WAF 
-16. Route 53
-```
+## Project Overview
+
+This project demonstrates deployment of a production-grade 3-tier architecture on AWS using 15+ AWS services.
+
+The architecture follows:
+- Web Tier (Frontend React + Nginx)
+- App Tier (Node.js Backend API)
+- Database Tier (Amazon RDS MySQL)
+
+The project focuses on:
+- High Availability
+- Security Best Practices
+- Scalability with Auto Scaling
+- Monitoring and Logging
+- CDN and Web Security
+
+
+## AWS Services Used
+
+- Amazon VPC
+- Security Group (Cross-connection)
+- EC2
+- Auto Scaling Group
+- Application Load Balancer
+- Amazon RDS
+- Amazon S3 (Data + VPC Flow Logs)
+- IAM
+- AWS Secrets Manager
+- CloudWatch
+- CloudTrail
+- Amazon SNS
+- Route 53
+- CloudFront
+- AWS WAF
+- AWS Certificate Manager (ACM)
+
+## Security Implementation
+
+- Multi-tier private subnet architecture
+- Security Group based cross-tier communication
+- IAM Roles attached to EC2 instead of access keys
+- Secrets stored in AWS Secrets Manager
+- Database deployed in private subnet
+- AWS WAF for Layer 7 protection
+- CloudTrail enabled for account activity monitoring
+- VPC Flow Logs stored in S3
+- ACM SSL certificate for HTTPS encryption
 
 
 ---
@@ -223,6 +251,7 @@ cd /home/ec2-user/application-code
 
 # Make script executable and run it
 chmod +x web.sh
+sed -i 's/\r$//' web.sh
 sudo ./web.sh
 ```
 
@@ -254,6 +283,7 @@ cd /home/ec2-user/application-code
 
 # Make script executable and run it
 chmod +x app.sh
+sed -i 's/\r$//' app.sh
 sudo ./app.sh
 ```
 
@@ -292,7 +322,93 @@ sudo ./app.sh
 
 ---
 
-## Create the Cloudfront  
-## Create the ACM for the Cloudfront  
-## Configure the WAF  
-## Configure the Route53  
+## Create CloudFront Distribution  
+
+1. Open **AWS Management Console** → Go to **CloudFront**  
+2. Click **Create Distribution**  
+3. Select the **Public Application Load Balancer DNS** as the **Origin Domain**  
+4. Set **Viewer Protocol Policy** → Redirect HTTP to HTTPS  
+5. Under **Cache Policy**, use default managed caching policy  
+6. Enable **Compress Objects Automatically**  
+7. Attach the **SSL Certificate (ACM)** once created  
+8. Set **Default Root Object** → `index.html`  
+9. Create the distribution and wait for deployment  
+
+---
+
+## Create ACM Certificate for HTTPS  
+
+1. Go to **AWS Certificate Manager (ACM)**  
+2. Switch region to **us-east-1** (required for CloudFront)  
+3. Click **Request Certificate**  
+4. Select **Request a public certificate**  
+5. Enter your domain name  
+
+   ```text
+   hiteshgupta.cloud
+   *.hiteshgupta.cloud
+   ```
+
+6. Choose **DNS Validation**  
+7. ACM will generate **CNAME records**  
+8. Add those records in **Route 53 Hosted Zone**  
+9. Wait until certificate status changes to **Issued**  
+10. Attach this certificate to CloudFront Distribution  
+
+---
+
+## Configure AWS WAF Protection  
+
+1. Open **AWS WAF & Shield**  
+2. Click **Create Web ACL**  
+3. Choose resource type → **CloudFront Distribution**  
+4. Select your CloudFront distribution  
+5. Add AWS Managed Rule Groups  
+
+   - AWSManagedRulesCommonRuleSet  
+   - AWSManagedRulesKnownBadInputsRuleSet  
+   - AWSManagedRulesAmazonIpReputationList  
+
+6. Configure rate limiting rule to block excessive requests  
+7. Set default action → **Allow**  
+8. Review and create Web ACL  
+9. Associate WAF with CloudFront Distribution  
+
+---
+
+## Configure Route 53 DNS  
+
+1. Go to **Amazon Route 53**  
+2. Create a **Hosted Zone** for your domain  
+
+   ```text
+   hiteshgupta.cloud
+   ```
+
+3. Update domain registrar nameservers with Route 53 nameservers  
+4. Create **A Record (Alias Record)**  
+5. Select target → **CloudFront Distribution**  
+6. Configure root domain  
+
+   ```text
+   hiteshgupta.cloud
+   ```
+
+7. (Optional) Create subdomain record  
+
+   ```text
+   app.hiteshgupta.cloud
+   ```
+
+8. Save record configuration  
+9. Test DNS resolution using  
+
+   ```bash
+   nslookup hiteshgupta.cloud
+   ```
+
+10. Access application over HTTPS  
+
+   ```text
+   https://hiteshgupta.cloud
+   ```
